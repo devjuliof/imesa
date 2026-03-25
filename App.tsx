@@ -1,20 +1,113 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react'
+import { StatusBar } from 'expo-status-bar'
+import { View, ActivityIndicator, StyleSheet } from 'react-native'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { NavigationContainer } from '@react-navigation/native'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { MenuScreen, SetupScreen, ProductDetailScreen, CurrentOrderScreen, OrderConfirmationScreen, CheckoutScreen, PixPaymentScreen, WaiterScreen } from './src/screens'
+import { useConfigStore } from './src/stores/configStore'
+import { colors } from './src/theme'
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+})
+
+// Navigation types
+export type RootStackParamList = {
+  Setup: undefined
+  Menu: undefined
+  ProductDetail: { productId: string; editingCartItemKey?: string }
+  CurrentOrder: undefined
+  OrderConfirmation: undefined
+  Checkout: undefined
+  PixPayment: { orderId: string; amount: number }
+  WaiterMode: undefined
+}
+
+const Stack = createNativeStackNavigator<RootStackParamList>()
+
+function AppContent() {
+  const [isHydrated, setIsHydrated] = useState(false)
+  const isConfigured = useConfigStore((state) => state.isConfigured)
+
+  useEffect(() => {
+    // Wait for zustand persist to rehydrate
+    const unsubscribe = useConfigStore.persist.onFinishHydration(() => {
+      setIsHydrated(true)
+    })
+
+    // Check if already hydrated
+    if (useConfigStore.persist.hasHydrated()) {
+      setIsHydrated(true)
+    }
+
+    return unsubscribe
+  }, [])
+
+  if (!isHydrated) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  return (
+    <NavigationContainer>
+      <StatusBar style="dark" />
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+        initialRouteName={isConfigured ? 'Menu' : 'Setup'}
+      >
+        <Stack.Screen name="Setup" component={SetupScreen} />
+        <Stack.Screen name="Menu" component={MenuScreen} />
+        <Stack.Screen
+          name="ProductDetail"
+          component={ProductDetailScreen}
+          options={{ presentation: 'transparentModal', animation: 'none' }}
+        />
+        <Stack.Screen
+          name="CurrentOrder"
+          component={CurrentOrderScreen}
+          options={{ presentation: 'transparentModal', animation: 'none' }}
+        />
+        <Stack.Screen
+          name="OrderConfirmation"
+          component={OrderConfirmationScreen}
+          options={{ animation: 'fade' }}
+        />
+        <Stack.Screen name="Checkout" component={CheckoutScreen} />
+        <Stack.Screen name="PixPayment" component={PixPaymentScreen} />
+        <Stack.Screen name="WaiterMode" component={WaiterScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  )
+}
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <AppContent />
+      </SafeAreaProvider>
+    </QueryClientProvider>
+  )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loading: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.background,
   },
-});
+})
