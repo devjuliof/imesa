@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { colors, spacing, typography, borderRadius } from '../theme'
-import { menuService } from '../services'
+import { menuService, tableService } from '../services'
 import { useConfigStore } from '../stores/configStore'
 import type { RootStackParamList } from '../../App'
 
@@ -29,6 +29,7 @@ export const SetupScreen: React.FC = () => {
   const [tableError, setTableError] = useState<string | null>(null)
 
   const setConfig = useConfigStore((state) => state.setConfig)
+  const getOrCreateDeviceId = useConfigStore((state) => state.getOrCreateDeviceId)
 
   const handleSubmit = async () => {
     const trimmedSlug = slug.trim().toLowerCase()
@@ -55,10 +56,24 @@ export const SetupScreen: React.FC = () => {
       // Validate slug by trying to fetch the menu
       await menuService.getPublicMenu(trimmedSlug)
 
-      // If successful, save the config
-      setConfig(trimmedSlug, trimmedTable)
-    } catch (err) {
-      setError('Restaurante não encontrado. Verifique o identificador.')
+      // Get or create device ID
+      const deviceId = getOrCreateDeviceId()
+
+      // Register device with the table (creates table if needed)
+      const tableData = await tableService.registerDevice(trimmedSlug, {
+        tableNumber: trimmedTable,
+        deviceId,
+      })
+
+      // If successful, save the config with tableId
+      setConfig(trimmedSlug, trimmedTable, tableData.id)
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } }
+      if (error.response?.status === 404) {
+        setError('Restaurante não encontrado. Verifique o identificador.')
+      } else {
+        setError('Erro ao conectar. Tente novamente.')
+      }
     } finally {
       setIsLoading(false)
     }

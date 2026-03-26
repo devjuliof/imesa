@@ -133,6 +133,7 @@ export interface CreateOrderPayload {
   source: OrderSource
   deliveryType?: DeliveryType
   tableNumber?: string
+  tableId?: string
   customerName: string
   customerPhone: string
   items: CreateOrderItem[]
@@ -181,6 +182,46 @@ export interface PixPaymentStatusResponse {
   orderId: string
   status: PixPaymentStatus
   paidAt: string | null
+}
+
+// ==================== CARD PAYMENT ====================
+
+export type CardPaymentType = 'credit_card' | 'debit_card'
+export type CardPaymentStatus = 'pending' | 'paid' | 'failed' | 'canceled'
+
+export interface CardCharge {
+  id: string
+  orderId: string
+  valueCents: number
+  status: CardPaymentStatus
+  paymentType: CardPaymentType
+  cardBrand: string | null
+  cardLastDigits: string | null
+  installments: number
+  createdAt: string
+}
+
+export interface CardFormData {
+  number: string
+  holderName: string
+  expMonth: string
+  expYear: string
+  cvv: string
+}
+
+export interface CreateCardChargePayload {
+  orderId: string
+  cardToken: string
+  paymentType: CardPaymentType
+  installments?: number
+}
+
+export interface PaymentConfig {
+  pagarmePublicKey: string
+  pixEnabled: boolean
+  cardEnabled: boolean
+  creditInstallmentsMax: number
+  creditMinInstallmentCents: number
 }
 
 // ==================== NAVIGATION ====================

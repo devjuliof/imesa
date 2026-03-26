@@ -36,6 +36,7 @@ export const CurrentOrderScreen: React.FC<Props> = ({ navigation }) => {
   const company = useCompanyStore((state) => state.company)
   const companySlug = useConfigStore((state) => state.companySlug) || ''
   const tableNumber = useConfigStore((state) => state.tableNumber)
+  const tableId = useConfigStore((state) => state.tableId)
   const { items, getTotal, getItemCount, updateQuantity, getItemKey, clearCart } = useCartStore()
   const { addSentOrder, sentOrders, customerName, customerPhone, setCustomerInfo } = useOrderStore()
   const [isSending, setIsSending] = useState(false)
@@ -174,6 +175,7 @@ export const CurrentOrderScreen: React.FC<Props> = ({ navigation }) => {
         source: 'tablet',
         deliveryType: 'dine_in',
         tableNumber: tableNumber || undefined,
+        tableId: tableId || undefined,
         customerName: finalName || `Mesa ${tableNumber || 'Tablet'}`,
         customerPhone: cleanPhone,
         items: orderItems,
@@ -206,7 +208,7 @@ export const CurrentOrderScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setIsSending(false)
     }
-  }, [items, companySlug, tableNumber, customerName, customerPhone, addSentOrder, clearCart, animateOut, navigation])
+  }, [items, companySlug, tableNumber, tableId, customerName, customerPhone, addSentOrder, clearCart, animateOut, navigation])
 
   const handleSendOrder = useCallback(() => {
     if (items.length === 0) {
