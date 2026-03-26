@@ -71,20 +71,60 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
   }, [])
 
   const handleCreditPayment = useCallback(() => {
-    Alert.alert(
-      'Em breve',
-      'Pagamento por cartão de crédito estará disponível em breve.',
-      [{ text: 'OK' }]
-    )
-  }, [])
+    const orderIds = getOrderIds()
+    const validOrderIds = orderIds.filter(isValidUUID)
+
+    if (validOrderIds.length === 0) {
+      Alert.alert(
+        'Sem pedidos válidos',
+        'Não há pedidos válidos para pagar. Por favor, faça um novo pedido.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              clearAllOrders()
+              navigation.navigate('Menu')
+            },
+          },
+        ]
+      )
+      return
+    }
+
+    navigation.navigate('CardPayment', {
+      orderId: validOrderIds[0],
+      amount: total,
+      paymentType: 'credit_card',
+    })
+  }, [getOrderIds, clearAllOrders, navigation, total])
 
   const handleDebitPayment = useCallback(() => {
-    Alert.alert(
-      'Em breve',
-      'Pagamento por cartão de débito estará disponível em breve.',
-      [{ text: 'OK' }]
-    )
-  }, [])
+    const orderIds = getOrderIds()
+    const validOrderIds = orderIds.filter(isValidUUID)
+
+    if (validOrderIds.length === 0) {
+      Alert.alert(
+        'Sem pedidos válidos',
+        'Não há pedidos válidos para pagar. Por favor, faça um novo pedido.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              clearAllOrders()
+              navigation.navigate('Menu')
+            },
+          },
+        ]
+      )
+      return
+    }
+
+    navigation.navigate('CardPayment', {
+      orderId: validOrderIds[0],
+      amount: total,
+      paymentType: 'debit_card',
+    })
+  }, [getOrderIds, clearAllOrders, navigation, total])
 
   const handlePixPayment = useCallback(() => {
     const orderIds = getOrderIds()

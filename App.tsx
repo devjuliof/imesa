@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { MenuScreen, SetupScreen, ProductDetailScreen, CurrentOrderScreen, OrderConfirmationScreen, CheckoutScreen, PixPaymentScreen, WaiterScreen } from './src/screens'
+import { MenuScreen, SetupScreen, ProductDetailScreen, CurrentOrderScreen, OrderConfirmationScreen, CheckoutScreen, PixPaymentScreen, CardPaymentScreen, WaiterScreen } from './src/screens'
+import type { CardPaymentType } from './src/types'
 import { useConfigStore } from './src/stores/configStore'
 import { colors } from './src/theme'
 
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   OrderConfirmation: undefined
   Checkout: undefined
   PixPayment: { orderId: string; amount: number }
+  CardPayment: { orderId: string; amount: number; paymentType: CardPaymentType }
   WaiterMode: undefined
 }
 
@@ -87,6 +89,7 @@ function AppContent() {
         />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen name="PixPayment" component={PixPaymentScreen} />
+        <Stack.Screen name="CardPayment" component={CardPaymentScreen} />
         <Stack.Screen name="WaiterMode" component={WaiterScreen} />
       </Stack.Navigator>
     </NavigationContainer>

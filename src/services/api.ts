@@ -6,8 +6,10 @@ const getApiBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
 
   // Android emulator uses 10.0.2.2 to access host's localhost
+  // Only replace 'localhost' or '127.0.0.1', NOT real network IPs (192.168.x.x)
+  // because physical devices need the actual network IP to connect
   if (__DEV__ && Platform.OS === 'android') {
-    return envUrl.replace(/192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|localhost/, '10.0.2.2')
+    return envUrl.replace(/localhost|127\.0\.0\.1/, '10.0.2.2')
   }
 
   return envUrl

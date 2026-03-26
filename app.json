@@ -23,13 +23,19 @@
       },
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.imesa"
+      "package": "com.itotem.imesa"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e1bfaf61-db98-431f-84d6-1c64c6aa89e4"
+      }
+    },
+    "owner": "devjuliof2"
   }
 }

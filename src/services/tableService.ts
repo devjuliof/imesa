@@ -11,7 +11,6 @@ export interface RegisterDeviceResponse {
   number: string
   name: string | null
   status: 'free' | 'occupied'
-  isVirtual: boolean
   deviceId: string | null
 }
 
