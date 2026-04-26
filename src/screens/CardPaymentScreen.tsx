@@ -30,7 +30,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CardPayment'>
 const detectCardBrand = (number: string): string => {
   const cleanNumber = number.replace(/\s/g, '')
   if (/^4/.test(cleanNumber)) return 'Visa'
-  if (/^5[1-5]/.test(cleanNumber)) return 'Mastercard'
+  if (/^5[0-5]/.test(cleanNumber)) return 'Mastercard'
   if (/^3[47]/.test(cleanNumber)) return 'Amex'
   if (/^6(?:011|5)/.test(cleanNumber)) return 'Discover'
   if (/^(?:636368|636369|5067|4576|4011)/.test(cleanNumber)) return 'Elo'

@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { menuService } from '../services/menuService'
 import { useCompanyStore } from '../stores/companyStore'
 import { useEffect } from 'react'
 
 export const useMenu = (companySlug: string) => {
   const setCompany = useCompanyStore((state) => state.setCompany)
+  const queryClient = useQueryClient()
 
   const query = useQuery({
     queryKey: ['menu', companySlug],
@@ -19,6 +20,23 @@ export const useMenu = (companySlug: string) => {
       setCompany(query.data.company)
     }
   }, [query.data?.company, setCompany])
+
+  // Prefetch all product details in background when menu loads
+  useEffect(() => {
+    if (!query.data?.categories || !companySlug) return
+
+    const productIds = query.data.categories.flatMap((cat) =>
+      cat.products.map((p) => p.id)
+    )
+
+    productIds.forEach((productId) => {
+      queryClient.prefetchQuery({
+        queryKey: ['product', companySlug, productId],
+        queryFn: () => menuService.getPublicProduct(companySlug, productId),
+        staleTime: 1000 * 60 * 5,
+      })
+    })
+  }, [query.data?.categories, companySlug, queryClient])
 
   return {
     categories: query.data?.categories ?? [],

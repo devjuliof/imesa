@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useOrderStore } from '../stores/orderStore'
 import { useCompanyStore } from '../stores/companyStore'
+import { useConfigStore } from '../stores/configStore'
 import { CheckoutItemCard } from '../components/checkout'
 import { HandIcon } from '../components/icons'
 import { getImageUrl } from '../services/api'
@@ -20,6 +21,10 @@ import { formatMoney } from '../utils/money.utils'
 import { colors, spacing, borderRadius } from '../theme'
 import type { RootStackParamList } from '../../App'
 import type { CartItem } from '../types'
+
+const HARDCODED_LOGOS: Record<string, any> = {
+  'forja-bbq': require('../../assets/forja-bbq-logo.png'),
+}
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Checkout'>
 
@@ -30,6 +35,7 @@ const isValidUUID = (id: string): boolean => UUID_REGEX.test(id)
 
 export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
   const company = useCompanyStore((state) => state.company)
+  const companySlug = useConfigStore((state) => state.companySlug) || ''
   const { getAllItems, getComandaTotal, clearAllOrders, getOrderIds, sentOrders } = useOrderStore()
 
   const primaryColor = company?.baseColor || colors.primary
@@ -173,7 +179,13 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
-          {company?.logo ? (
+          {HARDCODED_LOGOS[companySlug] ? (
+            <Image
+              source={HARDCODED_LOGOS[companySlug]}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          ) : company?.logo ? (
             <Image
               source={{ uri: getImageUrl(company.logo) || undefined }}
               style={styles.logo}
@@ -290,10 +302,13 @@ const styles = StyleSheet.create({
   headerCenter: {
     flex: 1,
     alignItems: 'center',
+    height: 50,
+    overflow: 'hidden',
   },
   logo: {
-    height: 40,
-    width: 160,
+    height: 120,
+    width: 260,
+    marginTop: -35,
   },
   companyName: {
     fontSize: 24,

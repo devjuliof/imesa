@@ -7,7 +7,7 @@ import type { PublicProduct } from '../../types'
 const SIDEBAR_WIDTH = 160
 const GRID_PADDING = 40
 const GAP = 24
-const NUM_COLUMNS = 2
+const NUM_COLUMNS = 3
 
 interface ProductGridProps {
   products: PublicProduct[]

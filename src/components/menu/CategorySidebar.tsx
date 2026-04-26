@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useRef, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  LayoutChangeEvent,
 } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { colors, spacing } from '../../theme'
@@ -70,6 +71,7 @@ interface CategorySidebarProps {
   categories: PublicCategory[]
   selectedCategoryId: string | null
   onSelectCategory: (categoryId: string) => void
+  autoScrollToSelected?: boolean
   primaryColor?: string
 }
 
@@ -77,19 +79,49 @@ export const CategorySidebar: React.FC<CategorySidebarProps> = ({
   categories,
   selectedCategoryId,
   onSelectCategory,
+  autoScrollToSelected = false,
   primaryColor = colors.primary,
 }) => {
+  const scrollViewRef = useRef<ScrollView>(null)
+  const itemPositions = useRef<Record<string, { y: number; height: number }>>({})
+  const scrollViewHeight = useRef(0)
+
+  const handleItemLayout = useCallback(
+    (categoryId: string) => (event: LayoutChangeEvent) => {
+      const { y, height } = event.nativeEvent.layout
+      itemPositions.current[categoryId] = { y, height }
+    },
+    []
+  )
+
+  const handleScrollViewLayout = useCallback((event: LayoutChangeEvent) => {
+    scrollViewHeight.current = event.nativeEvent.layout.height
+  }, [])
+
+  useEffect(() => {
+    if (!autoScrollToSelected || !selectedCategoryId || !scrollViewRef.current) return
+    const item = itemPositions.current[selectedCategoryId]
+    if (!item) return
+
+    // Scroll so the selected item is centered in the sidebar
+    const targetY = item.y - scrollViewHeight.current / 2 + item.height / 2
+    scrollViewRef.current.scrollTo({ y: Math.max(0, targetY), animated: true })
+  }, [selectedCategoryId, autoScrollToSelected])
+
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onLayout={handleScrollViewLayout}
       >
         {categories.map((category) => {
           const isSelected = selectedCategoryId === category.id
           return (
             <TouchableOpacity
               key={category.id}
+              onLayout={handleItemLayout(category.id)}
               style={[
                 styles.categoryItem,
                 isSelected && [styles.categoryItemSelected, { backgroundColor: primaryColor }],

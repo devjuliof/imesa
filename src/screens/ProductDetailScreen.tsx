@@ -228,22 +228,6 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     return true;
   }, [currentGroup, selectedAddons]);
 
-  const handleNextStep = useCallback(() => {
-    if (!validateCurrentStep()) return;
-
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      handleAddToCart();
-    }
-  }, [currentStep, totalSteps, validateCurrentStep]);
-
-  const handlePreviousStep = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  }, [currentStep]);
-
   const handleAddToCart = useCallback(() => {
     if (!product) return;
 
@@ -283,6 +267,22 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       animateOut(() => navigation.goBack());
     }
   }, [product, selectedAddons, quantity, addItem, removeItem, editingCartItemKey, animateOut, navigation]);
+
+  const handleNextStep = useCallback(() => {
+    if (!validateCurrentStep()) return;
+
+    if (currentStep < totalSteps - 1) {
+      setCurrentStep((prev) => prev + 1);
+    } else {
+      handleAddToCart();
+    }
+  }, [currentStep, totalSteps, validateCurrentStep, handleAddToCart]);
+
+  const handlePreviousStep = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  }, [currentStep]);
 
   const finishSuggestionFlow = useCallback((finalAcceptedSuggestions: CartItem[]) => {
     // Add pending item

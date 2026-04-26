@@ -8,6 +8,8 @@ interface CartFooterProps {
   itemCount: number;
   total: number;
   onPress: () => void;
+  onViewComanda?: () => void;
+  hasComanda?: boolean;
   primaryColor?: string;
 }
 
@@ -15,6 +17,8 @@ export const CartFooter: React.FC<CartFooterProps> = ({
   itemCount,
   total,
   onPress,
+  onViewComanda,
+  hasComanda = false,
   primaryColor = colors.primary,
 }) => {
   const isEmpty = itemCount === 0;
@@ -22,15 +26,19 @@ export const CartFooter: React.FC<CartFooterProps> = ({
   return (
     <TouchableOpacity
       style={[styles.container, { backgroundColor: primaryColor }]}
-      onPress={onPress}
-      activeOpacity={isEmpty ? 1 : 0.8}
-      disabled={isEmpty}
+      onPress={isEmpty && hasComanda ? onViewComanda : onPress}
+      activeOpacity={isEmpty && !hasComanda ? 1 : 0.8}
+      disabled={isEmpty && !hasComanda}
     >
       <View style={styles.content}>
         <BagIcon size={28} color={colors.white} />
 
         {isEmpty ? (
-          <Text style={styles.emptyText}>Sem nenhum pedido no carrinho</Text>
+          hasComanda ? (
+            <Text style={styles.emptyText}>Ver comanda</Text>
+          ) : (
+            <Text style={styles.emptyText}>Sem nenhum pedido no carrinho</Text>
+          )
         ) : (
           <>
             <View style={[styles.badge, { backgroundColor: colors.white }]}>
@@ -69,6 +77,7 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: colors.white,
     flex: 1,
+    textAlign: "center",
   },
   total: {
     ...typography.price,

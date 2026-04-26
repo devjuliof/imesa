@@ -11,8 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, borderRadius, typography } from "../../theme";
 import { HandIcon } from "../icons";
 
+const HARDCODED_LOGOS: Record<string, any> = {
+  'forja-bbq': require('../../../assets/forja-bbq-logo.png'),
+};
+
 interface HeaderProps {
   logoUrl?: string | null;
+  companySlug?: string;
   companyName?: string;
   tableNumber?: string | null;
   searchQuery: string;
@@ -23,6 +28,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   logoUrl,
+  companySlug,
   companyName,
   tableNumber,
   searchQuery,
@@ -30,12 +36,20 @@ export const Header: React.FC<HeaderProps> = ({
   onCallWaiter,
   primaryColor = colors.primary,
 }) => {
+  const hardcodedLogo = companySlug ? HARDCODED_LOGOS[companySlug] : undefined;
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContent}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          {logoUrl ? (
+          {hardcodedLogo ? (
+            <Image
+              source={hardcodedLogo}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          ) : logoUrl ? (
             <Image
               source={{ uri: logoUrl }}
               style={styles.logo}
@@ -108,11 +122,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   logoContainer: {
-    minWidth: 200,
+    height: 50,
+    width: 260,
+    overflow: "hidden",
   },
   logo: {
-    height: 60,
-    width: 240,
+    height: 120,
+    width: 260,
+    marginTop: -35,
+    marginLeft: -40,
   },
   companyName: {
     fontSize: 28,
@@ -155,21 +173,25 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    ...typography.body,
+    fontSize: 16,
+    fontWeight: "400",
     color: colors.textPrimary,
+    height: "100%",
+    textAlignVertical: "center",
+    paddingVertical: 0,
   },
   waiterButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
     borderRadius: borderRadius.full,
     gap: spacing.sm,
     height: 52,
   },
   waiterButtonText: {
-    ...typography.button,
     color: colors.white,
     fontSize: 16,
+    fontWeight: "600",
   },
 });

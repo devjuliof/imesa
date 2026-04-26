@@ -26,11 +26,12 @@ export const MenuScreen: React.FC = () => {
   const tableNumber = useConfigStore((state) => state.tableNumber)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sidebarAutoScroll, setSidebarAutoScroll] = useState(false)
   const menuRef = useRef<ContinuousMenuRef>(null)
 
   const { categories, company, isLoading, isError } = useMenu(companySlug)
   const { getTotal, getItemCount, addItem, setCompanySlug, clearCart } = useCartStore()
-  const { clearAllOrders } = useOrderStore()
+  const { clearAllOrders, sentOrders } = useOrderStore()
 
   // Set company slug when menu loads
   React.useEffect(() => {
@@ -69,11 +70,13 @@ export const MenuScreen: React.FC = () => {
   )
 
   const handleSelectCategory = useCallback((categoryId: string) => {
+    setSidebarAutoScroll(true)
     setSelectedCategoryId(categoryId)
     menuRef.current?.scrollToCategory(categoryId)
   }, [])
 
   const handleCategoryVisible = useCallback((categoryId: string) => {
+    setSidebarAutoScroll(false)
     setSelectedCategoryId(categoryId)
   }, [])
 
@@ -109,6 +112,10 @@ export const MenuScreen: React.FC = () => {
     navigation.navigate('CurrentOrder')
   }, [navigation])
 
+  const handleViewComanda = useCallback(() => {
+    navigation.navigate('Checkout')
+  }, [navigation])
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -139,6 +146,7 @@ export const MenuScreen: React.FC = () => {
       >
         <Header
           logoUrl={company?.logo}
+          companySlug={companySlug}
           companyName={company?.name}
           tableNumber={tableNumber}
           searchQuery={searchQuery}
@@ -160,6 +168,7 @@ export const MenuScreen: React.FC = () => {
           categories={categories}
           selectedCategoryId={selectedCategoryId}
           onSelectCategory={handleSelectCategory}
+          autoScrollToSelected={sidebarAutoScroll}
           primaryColor={primaryColor}
         />
 
@@ -180,6 +189,8 @@ export const MenuScreen: React.FC = () => {
         itemCount={getItemCount()}
         total={getTotal()}
         onPress={handleCartPress}
+        onViewComanda={handleViewComanda}
+        hasComanda={sentOrders.length > 0}
         primaryColor={primaryColor}
       />
     </SafeAreaView>
