@@ -29,7 +29,15 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build APK
-        run: eas build --platform android --profile preview --non-interactive --output ./imesa.apk
+        run: |
+          eas build --platform android --profile preview --non-interactive --json > build-result.json
+          cat build-result.json
+
+      - name: Download APK from EAS
+        run: |
+          APK_URL=$(jq -r '.[0].artifacts.buildUrl' build-result.json)
+          echo "Downloading APK from: $APK_URL"
+          curl -L -o imesa.apk "$APK_URL"
 
       - name: Get version from tag
         id: version
