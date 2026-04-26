@@ -28,7 +28,7 @@ export const PixPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | undefined>()
+  const [qrCode, setQrCode] = useState<string | undefined>()
   const [remainingSeconds, setRemainingSeconds] = useState(PIX_EXPIRATION_SECONDS)
   const [isPaid, setIsPaid] = useState(false)
 
@@ -44,7 +44,7 @@ export const PixPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
         setIsLoading(true)
         setError(undefined)
         const pixCharge = await orderService.createPixCharge(orderId)
-        setQrCodeUrl(pixCharge.qrCodeUrl)
+        setQrCode(pixCharge.qrCode)
       } catch (err) {
         console.error('Error generating PIX:', err)
         setError('Não foi possível gerar o código PIX. Tente novamente.')
@@ -75,7 +75,7 @@ export const PixPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
 
   // Poll for payment status
   useEffect(() => {
-    if (!qrCodeUrl || isPaid) return
+    if (!qrCode || isPaid) return
 
     pollingRef.current = setInterval(async () => {
       try {
@@ -102,7 +102,7 @@ export const PixPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [qrCodeUrl, isPaid, orderId, clearAllOrders, navigation])
+  }, [qrCode, isPaid, orderId, clearAllOrders, navigation])
 
   const handleGoBack = useCallback(() => {
     navigation.goBack()
@@ -209,9 +209,9 @@ export const PixPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
                   <Text style={styles.retryButtonText}>Tentar novamente</Text>
                 </TouchableOpacity>
               </View>
-            ) : qrCodeUrl ? (
+            ) : qrCode ? (
               <Image
-                source={{ uri: qrCodeUrl }}
+                source={{ uri: `data:image/png;base64,${qrCode}` }}
                 style={styles.qrCode}
                 resizeMode="contain"
               />

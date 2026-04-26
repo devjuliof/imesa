@@ -167,19 +167,16 @@ export interface AddonSelection {
 export type PixPaymentStatus = 'pending' | 'completed' | 'expired' | 'error'
 
 export interface PixCharge {
-  id: string
-  orderId: string
-  valueCents: number
-  status: PixPaymentStatus
+  paymentId: string
+  qrCode: string // base64 da imagem QR
   brCode: string
-  qrCodeUrl: string
-  paymentLinkUrl: string
+  ticketUrl: string
+  valueCents: number
   expiresAt: string
-  createdAt: string
+  status: string
 }
 
 export interface PixPaymentStatusResponse {
-  orderId: string
   status: PixPaymentStatus
   paidAt: string | null
 }
