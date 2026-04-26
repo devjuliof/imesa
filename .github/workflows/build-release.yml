@@ -1,0 +1,50 @@
+name: Build APK & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK
+        run: eas build --platform android --profile preview --non-interactive --output ./imesa.apk
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: iMesa ${{ steps.version.outputs.VERSION }}
+          generate_release_notes: true
+          files: ./imesa.apk
+          body: |
+            ## iMesa ${{ steps.version.outputs.VERSION }}
+
+            ### Download
+            Baixe o APK abaixo e instale no tablet.
+
+            > **Nota:** Certifique-se de habilitar "Fontes desconhecidas" nas configurações do Android.

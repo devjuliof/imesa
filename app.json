@@ -28,6 +28,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e1bfaf61-db98-431f-84d6-1c64c6aa89e4"
+    },
     "plugins": [
       "expo-font"
     ],
