@@ -184,18 +184,18 @@ export interface PixPaymentStatusResponse {
 // ==================== CARD PAYMENT ====================
 
 export type CardPaymentType = 'credit_card' | 'debit_card'
-export type CardPaymentStatus = 'pending' | 'paid' | 'failed' | 'canceled'
+export type CardChargeStatus = 'approved' | 'pending' | 'rejected' | 'in_process'
 
-export interface CardCharge {
-  id: string
-  orderId: string
+export interface CardChargeResponse {
+  paymentId: string
+  status: CardChargeStatus
+  statusDetail: string
   valueCents: number
-  status: CardPaymentStatus
-  paymentType: CardPaymentType
-  cardBrand: string | null
-  cardLastDigits: string | null
   installments: number
-  createdAt: string
+  threeDsChallenge?: {
+    externalResourceUrl: string
+    creq: string
+  }
 }
 
 export interface CardFormData {
@@ -208,17 +208,54 @@ export interface CardFormData {
 
 export interface CreateCardChargePayload {
   orderId: string
-  cardToken: string
-  paymentType: CardPaymentType
-  installments?: number
+  token: string
+  paymentMethodId: string
+  installments: number
+  issuerId?: number
+  payerEmail: string
+  payerIdentificationType: string
+  payerIdentificationNumber: string
 }
 
 export interface PaymentConfig {
-  pagarmePublicKey: string
+  publicKey: string | null
   pixEnabled: boolean
   cardEnabled: boolean
-  creditInstallmentsMax: number
-  creditMinInstallmentCents: number
+}
+
+// Mercado Pago card token response
+export interface MpCardTokenResponse {
+  id: string
+  first_six_digits: string
+  last_four_digits: string
+  expiration_month: number
+  expiration_year: number
+  cardholder: {
+    name: string
+    identification: {
+      type: string
+      number: string
+    }
+  }
+}
+
+// Mercado Pago installment option from API
+export interface MpInstallmentOption {
+  installments: number
+  installment_rate: number
+  installment_amount: number
+  total_amount: number
+  recommended_message: string
+}
+
+export interface MpInstallmentResponse {
+  payment_method_id: string
+  payment_type_id: string
+  issuer: {
+    id: string
+    name: string
+  }
+  payer_costs: MpInstallmentOption[]
 }
 
 // ==================== NAVIGATION ====================

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -20,9 +20,11 @@ import { orderService } from '../services/orderService'
 import { formatMoney } from '../utils/money.utils'
 import { colors, spacing, borderRadius } from '../theme'
 import type { RootStackParamList } from '../../App'
-import type { CardPaymentType, PaymentConfig } from '../types'
+import type { CardPaymentType, PaymentConfig, MpInstallmentOption } from '../types'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CardPayment'>
+
+// ==================== HELPERS ====================
 
 // Card brand detection based on number prefix
 const detectCardBrand = (number: string): string => {
@@ -36,6 +38,19 @@ const detectCardBrand = (number: string): string => {
   return ''
 }
 
+// Map card brand to Mercado Pago paymentMethodId
+const getPaymentMethodId = (brand: string): string => {
+  const map: Record<string, string> = {
+    Visa: 'visa',
+    Mastercard: 'master',
+    Amex: 'amex',
+    Elo: 'elo',
+    Hipercard: 'hipercard',
+    Discover: 'discover',
+  }
+  return map[brand] || 'visa'
+}
+
 // Format card number with spaces
 const formatCardNumber = (value: string): string => {
   const v = value.replace(/\s+/g, '').replace(/\D/g, '')
@@ -45,6 +60,36 @@ const formatCardNumber = (value: string): string => {
   }
   return parts.join(' ')
 }
+
+// Format CPF: 000.000.000-00
+const formatCpf = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+}
+
+// Map Mercado Pago statusDetail to friendly Portuguese messages
+const cardErrorMessages: Record<string, string> = {
+  cc_rejected_bad_filled_date: 'Data de validade incorreta.',
+  cc_rejected_bad_filled_other: 'Dados do cartao incorretos.',
+  cc_rejected_bad_filled_security_code: 'Codigo de seguranca incorreto.',
+  cc_rejected_call_for_authorize: 'Ligue para a operadora do cartao para autorizar.',
+  cc_rejected_card_disabled: 'Cartao desabilitado. Ligue para a operadora.',
+  cc_rejected_duplicated_payment: 'Pagamento duplicado. Ja existe uma cobranca.',
+  cc_rejected_insufficient_amount: 'Saldo insuficiente.',
+  cc_rejected_invalid_installments: 'Parcelas invalidas para este cartao.',
+  cc_rejected_max_attempts: 'Limite de tentativas. Use outro cartao.',
+  cc_rejected_high_risk: 'Pagamento recusado. Tente outro cartao.',
+  cc_rejected_other_reason: 'Pagamento recusado. Tente outro cartao.',
+}
+
+const getErrorMessage = (statusDetail: string): string => {
+  return cardErrorMessages[statusDetail] || 'Pagamento nao autorizado. Verifique os dados do cartao.'
+}
+
+// ==================== COMPONENT ====================
 
 export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
   const { orderId, amount, paymentType } = route.params
@@ -61,6 +106,8 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
   const [expMonth, setExpMonth] = useState('')
   const [expYear, setExpYear] = useState('')
   const [cvv, setCvv] = useState('')
+  const [cpf, setCpf] = useState('')
+  const [email, setEmail] = useState('')
   const [installments, setInstallments] = useState(1)
 
   // UI state
@@ -69,8 +116,14 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isPaid, setIsPaid] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null)
+  const [installmentOptions, setInstallmentOptions] = useState<MpInstallmentOption[]>([])
+  const [isLoadingInstallments, setIsLoadingInstallments] = useState(false)
+
+  // Polling ref for 3DS/pending status
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const cardBrand = detectCardBrand(cardNumber)
+  const cleanCardNumber = cardNumber.replace(/\s/g, '')
 
   // Load payment config on mount
   useEffect(() => {
@@ -92,32 +145,47 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
     loadConfig()
   }, [companySlug])
 
-  // Calculate installment options
-  const getInstallmentOptions = useCallback(() => {
-    if (!paymentConfig || !isCredit) return [{ value: 1, label: '1x (a vista)' }]
+  // Fetch installments from Mercado Pago when card has 6+ digits (credit only)
+  useEffect(() => {
+    if (!isCredit || !paymentConfig?.publicKey || cleanCardNumber.length < 6) {
+      setInstallmentOptions([])
+      setInstallments(1)
+      return
+    }
 
-    const options = []
-    const maxInstallments = paymentConfig.creditInstallmentsMax
-    const minInstallmentValue = paymentConfig.creditMinInstallmentCents
+    const bin = cleanCardNumber.slice(0, 6)
+    let cancelled = false
 
-    for (let i = 1; i <= maxInstallments; i++) {
-      const installmentValue = Math.floor(amount / i)
-      if (installmentValue >= minInstallmentValue) {
-        options.push({
-          value: i,
-          label: i === 1 ? '1x (a vista)' : `${i}x de ${formatMoney(installmentValue)}`,
-        })
+    const fetchInstallments = async () => {
+      setIsLoadingInstallments(true)
+      try {
+        const amountInReais = amount / 100
+        const result = await orderService.getInstallments(paymentConfig.publicKey!, amountInReais, bin)
+        if (!cancelled && result.length > 0) {
+          setInstallmentOptions(result[0].payer_costs)
+        }
+      } catch (err) {
+        console.error('Error fetching installments:', err)
+      } finally {
+        if (!cancelled) setIsLoadingInstallments(false)
       }
     }
 
-    return options.length > 0 ? options : [{ value: 1, label: '1x (a vista)' }]
-  }, [paymentConfig, isCredit, amount])
+    fetchInstallments()
+    return () => { cancelled = true }
+  }, [cleanCardNumber, isCredit, paymentConfig?.publicKey, amount])
 
-  const installmentOptions = getInstallmentOptions()
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [])
 
   // Form validation
   const isFormValid = useCallback(() => {
     const cleanNumber = cardNumber.replace(/\s/g, '')
+    const cleanCpf = cpf.replace(/\D/g, '')
     return (
       cleanNumber.length >= 13 &&
       cleanNumber.length <= 19 &&
@@ -127,16 +195,52 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
       parseInt(expMonth, 10) <= 12 &&
       expYear.length === 2 &&
       cvv.length >= 3 &&
-      cvv.length <= 4
+      cvv.length <= 4 &&
+      cleanCpf.length === 11 &&
+      email.includes('@') &&
+      email.includes('.')
     )
-  }, [cardNumber, holderName, expMonth, expYear, cvv])
+  }, [cardNumber, holderName, expMonth, expYear, cvv, cpf, email])
 
   const handleGoBack = useCallback(() => {
     navigation.goBack()
   }, [navigation])
 
+  const handleSuccess = useCallback(() => {
+    setIsPaid(true)
+    setTimeout(() => {
+      clearAllOrders()
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Menu' }],
+      })
+    }, 2000)
+  }, [clearAllOrders, navigation])
+
+  const startStatusPolling = useCallback((orderIdToPoll: string) => {
+    pollingRef.current = setInterval(async () => {
+      try {
+        const status = await orderService.getPaymentStatus(orderIdToPoll)
+        if (status.status === 'completed') {
+          if (pollingRef.current) clearInterval(pollingRef.current)
+          handleSuccess()
+        }
+      } catch (err) {
+        // Ignore polling errors
+      }
+    }, 3000)
+
+    // Stop polling after 5 minutes
+    setTimeout(() => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }, 5 * 60 * 1000)
+  }, [handleSuccess])
+
   const handleSubmit = useCallback(async () => {
-    if (!isFormValid() || !paymentConfig?.pagarmePublicKey) {
+    if (!isFormValid() || !paymentConfig?.publicKey) {
       setError('Preencha todos os campos corretamente')
       return
     }
@@ -145,37 +249,44 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
       setIsProcessing(true)
       setError(undefined)
 
-      // Tokenize card with Pagar.me
-      const token = await orderService.tokenizeCard(paymentConfig.pagarmePublicKey, {
-        number: cardNumber,
-        holderName,
-        expMonth,
-        expYear,
-        cvv,
-      })
+      // 1. Tokenize card with Mercado Pago
+      const tokenResponse = await orderService.tokenizeCard(
+        paymentConfig.publicKey,
+        {
+          number: cardNumber,
+          holderName,
+          expMonth,
+          expYear,
+          cvv,
+        },
+        cpf,
+      )
 
-      // Create charge with our backend
+      // 2. Create charge via our backend
       const charge = await orderService.createCardCharge({
         orderId,
-        cardToken: token,
-        paymentType,
+        token: tokenResponse.id,
+        paymentMethodId: getPaymentMethodId(cardBrand),
         installments: isCredit ? installments : 1,
+        payerEmail: email,
+        payerIdentificationType: 'CPF',
+        payerIdentificationNumber: cpf.replace(/\D/g, ''),
       })
 
-      if (charge.status === 'paid') {
-        setIsPaid(true)
-        // Clear orders and navigate to menu after success
-        setTimeout(() => {
-          clearAllOrders()
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Menu' }],
-          })
-        }, 2000)
-      } else if (charge.status === 'pending') {
-        setError('Pagamento em processamento. Voce sera notificado quando for confirmado.')
-      } else {
-        setError('Pagamento nao autorizado. Verifique os dados do cartao.')
+      // 3. Handle response
+      if (charge.status === 'approved') {
+        handleSuccess()
+      } else if (charge.status === 'rejected') {
+        setError(getErrorMessage(charge.statusDetail))
+      } else if (charge.status === 'pending' || charge.status === 'in_process') {
+        if (charge.threeDsChallenge) {
+          // For 3DS challenge, start polling for status update
+          setError('Pagamento em processamento. Aguarde a confirmacao...')
+          startStatusPolling(orderId)
+        } else {
+          setError('Pagamento em processamento. Voce sera notificado quando for confirmado.')
+          startStatusPolling(orderId)
+        }
       }
     } catch (err) {
       console.error('Error processing card payment:', err)
@@ -191,12 +302,14 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
     expMonth,
     expYear,
     cvv,
+    cpf,
+    email,
     orderId,
-    paymentType,
+    cardBrand,
     isCredit,
     installments,
-    clearAllOrders,
-    navigation,
+    handleSuccess,
+    startStatusPolling,
   ])
 
   // Loading state
@@ -369,33 +482,85 @@ export const CardPaymentScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </View>
 
+            {/* CPF */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>CPF do titular</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="000.000.000-00"
+                placeholderTextColor={colors.textMuted}
+                value={cpf}
+                onChangeText={(text) => setCpf(formatCpf(text))}
+                maxLength={14}
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>E-mail</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="seu@email.com"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            </View>
+
             {/* Installments (credit only) */}
-            {isCredit && installmentOptions.length > 1 && (
+            {isCredit && installmentOptions.length > 0 && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Parcelas</Text>
+                {isLoadingInstallments ? (
+                  <ActivityIndicator size="small" color={primaryColor} />
+                ) : (
+                  <View style={styles.installmentsContainer}>
+                    {installmentOptions.map((opt) => (
+                      <TouchableOpacity
+                        key={opt.installments}
+                        style={[
+                          styles.installmentOption,
+                          installments === opt.installments && {
+                            borderColor: primaryColor,
+                            backgroundColor: `${primaryColor}10`,
+                          },
+                        ]}
+                        onPress={() => setInstallments(opt.installments)}
+                      >
+                        <Text
+                          style={[
+                            styles.installmentText,
+                            installments === opt.installments && { color: primaryColor },
+                          ]}
+                        >
+                          {opt.recommended_message}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Debit: always 1x */}
+            {!isCredit && (
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Parcelas</Text>
                 <View style={styles.installmentsContainer}>
-                  {installmentOptions.map((opt) => (
-                    <TouchableOpacity
-                      key={opt.value}
-                      style={[
-                        styles.installmentOption,
-                        installments === opt.value && {
-                          borderColor: primaryColor,
-                          backgroundColor: `${primaryColor}10`,
-                        },
-                      ]}
-                      onPress={() => setInstallments(opt.value)}
-                    >
-                      <Text
-                        style={[
-                          styles.installmentText,
-                          installments === opt.value && { color: primaryColor },
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  <View
+                    style={[
+                      styles.installmentOption,
+                      { borderColor: primaryColor, backgroundColor: `${primaryColor}10` },
+                    ]}
+                  >
+                    <Text style={[styles.installmentText, { color: primaryColor }]}>
+                      1x de {formatMoney(amount)} (a vista)
+                    </Text>
+                  </View>
                 </View>
               </View>
             )}

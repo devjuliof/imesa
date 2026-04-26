@@ -5,13 +5,15 @@ import type {
   Order,
   PixCharge,
   PixPaymentStatusResponse,
-  CardCharge,
   CardFormData,
   CreateCardChargePayload,
+  CardChargeResponse,
   PaymentConfig,
+  MpCardTokenResponse,
+  MpInstallmentResponse,
 } from '../types'
 
-const PAGARME_API_URL = 'https://api.pagar.me/core/v5'
+const MP_API_URL = 'https://api.mercadopago.com/v1'
 
 export interface WaiterCallPayload {
   companySlug: string
@@ -59,7 +61,7 @@ export const orderService = {
     return response.data.data
   },
 
-  // ==================== CARD PAYMENT ====================
+  // ==================== CARD PAYMENT (Mercado Pago) ====================
 
   /**
    * Get payment configuration for a company
@@ -73,43 +75,70 @@ export const orderService = {
   },
 
   /**
-   * Tokenize card data directly with Pagar.me
+   * Tokenize card data via Mercado Pago public API
    * This is called on the frontend to avoid sending card data to our backend
-   * Token expires in 60 seconds
+   * Uses POST /v1/card_tokens?public_key=...
    */
-  tokenizeCard: async (publicKey: string, cardData: CardFormData): Promise<string> => {
-    const response = await fetch(`${PAGARME_API_URL}/tokens?appId=${publicKey}`, {
+  tokenizeCard: async (
+    publicKey: string,
+    cardData: CardFormData,
+    cpf: string,
+  ): Promise<MpCardTokenResponse> => {
+    const response = await fetch(`${MP_API_URL}/card_tokens?public_key=${publicKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        type: 'card',
-        card: {
-          number: cardData.number.replace(/\s/g, ''),
-          holder_name: cardData.holderName.toUpperCase(),
-          exp_month: parseInt(cardData.expMonth, 10),
-          exp_year: parseInt(cardData.expYear, 10),
-          cvv: cardData.cvv,
+        card_number: cardData.number.replace(/\s/g, ''),
+        expiration_month: parseInt(cardData.expMonth, 10),
+        expiration_year: parseInt(`20${cardData.expYear}`, 10),
+        security_code: cardData.cvv,
+        cardholder: {
+          name: cardData.holderName.toUpperCase(),
+          identification: {
+            type: 'CPF',
+            number: cpf.replace(/\D/g, ''),
+          },
         },
       }),
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Erro ao processar cartao')
+      const errorData = await response.json().catch(() => ({}))
+      const message = errorData?.message || errorData?.cause?.[0]?.description || 'Erro ao processar cartao. Verifique os dados.'
+      throw new Error(message)
     }
 
-    const data = await response.json()
-    return data.id
+    return response.json()
   },
 
   /**
-   * Create a card charge for an order
-   * Uses token from tokenizeCard
+   * Fetch installment options from Mercado Pago API
+   * Uses GET /v1/payment_methods/installments?amount=X&bin=XXXXXX&public_key=...
    */
-  createCardCharge: async (payload: CreateCardChargePayload): Promise<CardCharge> => {
-    const response = await api.post<ApiResponse<CardCharge>>(
+  getInstallments: async (
+    publicKey: string,
+    amountInReais: number,
+    bin: string,
+  ): Promise<MpInstallmentResponse[]> => {
+    const response = await fetch(
+      `${MP_API_URL}/payment_methods/installments?amount=${amountInReais}&bin=${bin}&public_key=${publicKey}`,
+    )
+
+    if (!response.ok) {
+      return []
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Create a card charge for an order via our backend
+   * Uses token from Mercado Pago tokenizeCard
+   */
+  createCardCharge: async (payload: CreateCardChargePayload): Promise<CardChargeResponse> => {
+    const response = await api.post<ApiResponse<CardChargeResponse>>(
       '/public/payments/card-charge',
       payload
     )
