@@ -34,13 +34,7 @@ export const useWaiterCall = (): UseWaiterCallResult => {
         [{ text: 'OK' }]
       )
     } catch (error) {
-      // For demo purposes, show success even if API fails
-      // In production, you might want to handle this differently
-      Alert.alert(
-        'Garçom chamado',
-        'Um garçom foi notificado e virá até sua mesa em breve.',
-        [{ text: 'OK' }]
-      )
+      Alert.alert('Erro', 'Nao foi possivel chamar o garcom. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
@@ -65,12 +59,7 @@ export const useWaiterCall = (): UseWaiterCallResult => {
         [{ text: 'OK' }]
       )
     } catch (error) {
-      // For demo purposes, show success even if API fails
-      Alert.alert(
-        'Conta solicitada',
-        'Um garçom trará a conta em breve.',
-        [{ text: 'OK' }]
-      )
+      Alert.alert('Erro', 'Nao foi possivel solicitar a conta. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
