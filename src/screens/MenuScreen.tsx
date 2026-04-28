@@ -11,6 +11,7 @@ import {
 } from '../components/menu'
 import type { ContinuousMenuRef } from '../components/menu'
 import { useMenu } from '../hooks/useMenu'
+import { useWaiterCall } from '../hooks/useWaiterCall'
 import { useCartStore } from '../stores/cartStore'
 import { useOrderStore } from '../stores/orderStore'
 import { useConfigStore } from '../stores/configStore'
@@ -100,13 +101,10 @@ export const MenuScreen: React.FC = () => {
     )
   }, [clearCart, clearAllOrders])
 
+  const { callWaiter } = useWaiterCall()
   const handleCallWaiter = useCallback(() => {
-    Alert.alert(
-      'Chamar Garçom',
-      'Um garçom será notificado e virá até sua mesa em breve.',
-      [{ text: 'OK' }]
-    )
-  }, [])
+    void callWaiter()
+  }, [callWaiter])
 
   const handleCartPress = useCallback(() => {
     navigation.navigate('CurrentOrder')

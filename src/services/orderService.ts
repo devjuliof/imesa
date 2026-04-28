@@ -35,7 +35,14 @@ export const orderService = {
    * Call waiter to the table
    */
   callWaiter: async (payload: WaiterCallPayload): Promise<void> => {
-    await api.post('/public/waiter-call', payload)
+    if (__DEV__) console.log('[iMesa] >>> CALLING WAITER:', JSON.stringify(payload))
+    try {
+      const resp = await api.post('/public/waiter-call', payload)
+      if (__DEV__) console.log('[iMesa] >>> WAITER CALL SUCCESS:', resp.status)
+    } catch (err: unknown) {
+      if (__DEV__) console.error('[iMesa] >>> WAITER CALL FAILED:', err instanceof Error ? err.message : err)
+      throw err
+    }
   },
 
   /**

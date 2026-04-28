@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProduct } from "../hooks/useMenu";
+import { useWaiterCall } from "../hooks/useWaiterCall";
 import { useCartStore } from "../stores/cartStore";
 import { useCompanyStore } from "../stores/companyStore";
 import { useConfigStore } from "../stores/configStore";
@@ -339,13 +340,10 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   }, [product?.suggestions, currentSuggestionIndex, acceptedSuggestions, finishSuggestionFlow]);
 
+  const { callWaiter } = useWaiterCall();
   const handleCallWaiter = useCallback(() => {
-    Alert.alert(
-      "Chamar Garçom",
-      "Um garçom será notificado e virá até sua mesa em breve.",
-      [{ text: "OK" }],
-    );
-  }, []);
+    void callWaiter();
+  }, [callWaiter]);
 
   const handleClose = useCallback(() => {
     animateOut(() => navigation.goBack());

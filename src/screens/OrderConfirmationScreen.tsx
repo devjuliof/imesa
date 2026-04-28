@@ -7,6 +7,7 @@ import {
   Alert,
 } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { useWaiterCall } from '../hooks/useWaiterCall'
 import { useCompanyStore } from '../stores/companyStore'
 import { ConfirmedIcon } from '../components/icons'
 import { colors, spacing, borderRadius } from '../theme'
@@ -22,13 +23,10 @@ export const OrderConfirmationScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('Menu')
   }, [navigation])
 
+  const { callWaiter } = useWaiterCall()
   const handleCallWaiter = useCallback(() => {
-    Alert.alert(
-      'Garçom chamado',
-      'Um garçom foi notificado e virá até sua mesa em breve.',
-      [{ text: 'OK' }]
-    )
-  }, [])
+    void callWaiter()
+  }, [callWaiter])
 
   const handleCloseTab = useCallback(() => {
     navigation.navigate('Checkout')

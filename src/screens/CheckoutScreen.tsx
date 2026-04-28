@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { useWaiterCall } from '../hooks/useWaiterCall'
 import { useOrderStore } from '../stores/orderStore'
 import { useCompanyStore } from '../stores/companyStore'
 import { useConfigStore } from '../stores/configStore'
@@ -68,13 +69,10 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('Menu')
   }, [navigation])
 
+  const { callWaiter } = useWaiterCall()
   const handleCallWaiter = useCallback(() => {
-    Alert.alert(
-      'Chamar Garçom',
-      'Um garçom será notificado e virá até sua mesa em breve.',
-      [{ text: 'OK' }]
-    )
-  }, [])
+    void callWaiter()
+  }, [callWaiter])
 
   const handleCreditPayment = useCallback(() => {
     const orderIds = getOrderIds()

@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useWaiterCall } from '../hooks/useWaiterCall'
 import { useCartStore } from '../stores/cartStore'
 import { useOrderStore } from '../stores/orderStore'
 import { useCompanyStore } from '../stores/companyStore'
@@ -81,13 +82,10 @@ export const CurrentOrderScreen: React.FC<Props> = ({ navigation }) => {
     ]).start(callback)
   }, [fadeAnim, slideAnim])
 
+  const { callWaiter } = useWaiterCall()
   const handleCallWaiter = useCallback(() => {
-    Alert.alert(
-      'Chamar Garçom',
-      'Um garçom será notificado e virá até sua mesa em breve.',
-      [{ text: 'OK' }]
-    )
-  }, [])
+    void callWaiter()
+  }, [callWaiter])
 
   const handleClose = useCallback(() => {
     animateOut(() => navigation.goBack())
