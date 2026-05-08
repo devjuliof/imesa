@@ -8,6 +8,10 @@ iMesa is a React Native (Expo) tablet application for in-restaurant digital menu
 
 This app consumes the same API as the iMenu web app (itotem-back).
 
+### Data-Driven Philosophy
+
+iTotem is a data-driven platform inspired by Toast. Every meaningful user interaction (orders, waiter calls, payments) should be sent to the backend with proper context (table number, timestamps, device info) so it can be stored and analyzed later for business insights.
+
 ## Quick Commands
 
 ```bash
