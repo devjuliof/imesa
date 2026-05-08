@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { View, ActivityIndicator, StyleSheet } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { MenuScreen, SetupScreen, ProductDetailScreen, CurrentOrderScreen, OrderConfirmationScreen, CheckoutScreen, PixPaymentScreen, CardPaymentScreen, WaiterScreen } from './src/screens'
+import { SessionClosedScreen } from './src/screens/SessionClosedScreen'
 import type { CardPaymentType } from './src/types'
 import { useConfigStore } from './src/stores/configStore'
+import { useSessionSocket } from './src/hooks/useSessionSocket'
 import { colors } from './src/theme'
 
 // Create a client
@@ -38,6 +40,21 @@ const Stack = createNativeStackNavigator<RootStackParamList>()
 function AppContent() {
   const [isHydrated, setIsHydrated] = useState(false)
   const isConfigured = useConfigStore((state) => state.isConfigured)
+  const navigationRef = useNavigationContainerRef<RootStackParamList>()
+
+  // Connect to WebSocket for session lifecycle events
+  const { sessionClosed, clearSessionClosed } = useSessionSocket()
+
+  const handleSessionClosedDismiss = useCallback(() => {
+    clearSessionClosed()
+    // Navigate back to the menu screen for the next customer
+    if (navigationRef.isReady()) {
+      navigationRef.reset({
+        index: 0,
+        routes: [{ name: 'Menu' }],
+      })
+    }
+  }, [clearSessionClosed, navigationRef])
 
   useEffect(() => {
     // Wait for zustand persist to rehydrate
@@ -62,7 +79,7 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <StatusBar style="dark" />
       <Stack.Navigator
         screenOptions={{
@@ -92,6 +109,11 @@ function AppContent() {
         <Stack.Screen name="CardPayment" component={CardPaymentScreen} />
         <Stack.Screen name="WaiterMode" component={WaiterScreen} />
       </Stack.Navigator>
+
+      {/* Session closed overlay - shown on top of everything */}
+      {sessionClosed && (
+        <SessionClosedScreen onDismiss={handleSessionClosedDismiss} />
+      )}
     </NavigationContainer>
   )
 }
