@@ -20,6 +20,18 @@ export const tableService = {
    * Creates the table if it doesn't exist, or links the device to existing table
    * POST /public/tables/:companySlug/register-device
    */
+  /**
+   * Start a new session for this table
+   * POST /public/tables/:companySlug/:tableId/session
+   */
+  startSession: async (
+    companySlug: string,
+    tableId: string,
+  ): Promise<{ sessionId: string; tableId: string; tableNumber: string; status: string }> => {
+    const response = await api.post(`/public/tables/${companySlug}/${tableId}/session`, {})
+    return response.data.data
+  },
+
   registerDevice: async (
     companySlug: string,
     payload: RegisterDevicePayload
