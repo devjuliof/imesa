@@ -11,7 +11,9 @@ export const useMenu = (companySlug: string) => {
     queryKey: ['menu', companySlug],
     queryFn: () => menuService.getPublicMenu(companySlug),
     enabled: !!companySlug,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0,
+    refetchInterval: 1000 * 30, // 30 seconds
+    refetchIntervalInBackground: true,
   })
 
   // Update company store when data is fetched
@@ -33,7 +35,7 @@ export const useMenu = (companySlug: string) => {
       queryClient.prefetchQuery({
         queryKey: ['product', companySlug, productId],
         queryFn: () => menuService.getPublicProduct(companySlug, productId),
-        staleTime: 1000 * 60 * 5,
+        staleTime: 0,
       })
     })
   }, [query.data?.categories, companySlug, queryClient])
@@ -53,7 +55,9 @@ export const useProduct = (companySlug: string, productId: string) => {
     queryKey: ['product', companySlug, productId],
     queryFn: () => menuService.getPublicProduct(companySlug, productId),
     enabled: !!companySlug && !!productId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0,
+    refetchInterval: 1000 * 30,
+    refetchIntervalInBackground: true,
   })
 
   return {
