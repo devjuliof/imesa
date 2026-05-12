@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react'
+import React, { useCallback, useMemo, useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -18,10 +18,11 @@ import { useConfigStore } from '../stores/configStore'
 import { CheckoutItemCard } from '../components/checkout'
 import { HandIcon } from '../components/icons'
 import { getImageUrl } from '../services/api'
+import { orderService } from '../services/orderService'
 import { formatMoney } from '../utils/money.utils'
 import { colors, spacing, borderRadius } from '../theme'
 import type { RootStackParamList } from '../../App'
-import type { CartItem } from '../types'
+import type { CartItem, PaymentConfig } from '../types'
 
 const HARDCODED_LOGOS: Record<string, any> = {
   'forja-bbq': require('../../assets/forja-bbq-logo.png'),
@@ -42,6 +43,16 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
   const primaryColor = company?.baseColor || colors.primary
   const items = useMemo(() => getAllItems(), [getAllItems])
   const total = useMemo(() => getComandaTotal(), [getComandaTotal])
+
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null)
+  const hasOnlinePayments = paymentConfig?.paymentMode === 'online'
+
+  useEffect(() => {
+    if (!companySlug) return
+    orderService.getPaymentConfig(companySlug)
+      .then(setPaymentConfig)
+      .catch(() => setPaymentConfig(null))
+  }, [companySlug])
 
   // Check for and clear invalid orders (orders with non-UUID IDs from before backend integration)
   useEffect(() => {
@@ -241,31 +252,43 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         <View style={styles.paymentSection}>
-          <Text style={styles.paymentLabel}>Fechar comanda:</Text>
-          <View style={styles.paymentButtons}>
-            <TouchableOpacity
-              style={styles.paymentButton}
-              onPress={handleCreditPayment}
-            >
-              <Ionicons name="card-outline" size={20} color={colors.textPrimary} />
-              <Text style={styles.paymentButtonText}>Crédito</Text>
-            </TouchableOpacity>
+          {hasOnlinePayments ? (
+            <>
+              <Text style={styles.paymentLabel}>Fechar comanda:</Text>
+              <View style={styles.paymentButtons}>
+                <TouchableOpacity
+                  style={styles.paymentButton}
+                  onPress={handleCreditPayment}
+                >
+                  <Ionicons name="card-outline" size={20} color={colors.textPrimary} />
+                  <Text style={styles.paymentButtonText}>Crédito</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.paymentButton}
-              onPress={handleDebitPayment}
-            >
-              <Ionicons name="card-outline" size={20} color={colors.textPrimary} />
-              <Text style={styles.paymentButtonText}>Débito</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.paymentButton}
+                  onPress={handleDebitPayment}
+                >
+                  <Ionicons name="card-outline" size={20} color={colors.textPrimary} />
+                  <Text style={styles.paymentButtonText}>Débito</Text>
+                </TouchableOpacity>
 
+                <TouchableOpacity
+                  style={[styles.paymentButtonPrimary, { backgroundColor: primaryColor }]}
+                  onPress={handlePixPayment}
+                >
+                  <Text style={styles.paymentButtonPrimaryText}>PIX</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
             <TouchableOpacity
-              style={[styles.paymentButtonPrimary, { backgroundColor: primaryColor }]}
-              onPress={handlePixPayment}
+              style={[styles.requestBillButton, { backgroundColor: primaryColor }]}
+              onPress={handleCallWaiter}
             >
-              <Text style={styles.paymentButtonPrimaryText}>PIX</Text>
+              <HandIcon size={20} color={colors.white} />
+              <Text style={styles.requestBillButtonText}>Pedir a conta</Text>
             </TouchableOpacity>
-          </View>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -413,6 +436,20 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   paymentButtonPrimaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  requestBillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    gap: spacing.sm,
+  },
+  requestBillButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.white,

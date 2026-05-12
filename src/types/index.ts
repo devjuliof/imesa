@@ -218,6 +218,7 @@ export interface CreateCardChargePayload {
 }
 
 export interface PaymentConfig {
+  paymentMode: 'online' | 'manual'
   publicKey: string | null
   pixEnabled: boolean
   cardEnabled: boolean
