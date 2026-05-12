@@ -68,9 +68,7 @@ export const SetupScreen: React.FC = () => {
       // If successful, save the config with tableId
       setConfig(trimmedSlug, trimmedTable, tableData.id)
     } catch (err: unknown) {
-      console.error('[SETUP] Error:', JSON.stringify(err, Object.getOwnPropertyNames(err as object), 2))
-      const error = err as { response?: { status?: number; data?: unknown }; message?: string }
-      console.error('[SETUP] Status:', error.response?.status, 'Message:', error.message, 'Data:', JSON.stringify(error.response?.data))
+      const error = err as { response?: { status?: number } }
       if (error.response?.status === 404) {
         setError('Restaurante não encontrado. Verifique o identificador.')
       } else {

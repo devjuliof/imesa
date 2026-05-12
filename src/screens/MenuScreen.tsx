@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react'
-import { View, StyleSheet, ActivityIndicator, Text, Alert, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -31,8 +31,8 @@ export const MenuScreen: React.FC = () => {
   const menuRef = useRef<ContinuousMenuRef>(null)
 
   const { categories, company, isLoading, isError } = useMenu(companySlug)
-  const { getTotal, getItemCount, addItem, setCompanySlug, clearCart } = useCartStore()
-  const { clearAllOrders, sentOrders } = useOrderStore()
+  const { getTotal, getItemCount, addItem, setCompanySlug } = useCartStore()
+  const { sentOrders } = useOrderStore()
 
   // Set company slug when menu loads
   React.useEffect(() => {
@@ -82,25 +82,6 @@ export const MenuScreen: React.FC = () => {
   }, [])
 
   // DEV: Reset comanda for testing (long press on header)
-  const handleResetComanda = useCallback(() => {
-    Alert.alert(
-      'Resetar Comanda',
-      'Deseja limpar todos os dados da comanda? (Apenas para testes)',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Resetar',
-          style: 'destructive',
-          onPress: () => {
-            clearCart()
-            clearAllOrders()
-            Alert.alert('Comanda resetada!')
-          },
-        },
-      ]
-    )
-  }, [clearCart, clearAllOrders])
-
   const { callWaiter } = useWaiterCall()
   const handleCallWaiter = useCallback(() => {
     void callWaiter()
@@ -136,12 +117,7 @@ export const MenuScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header wrapper with white background for rounded corners */}
-      {/* DEV: Long press to reset comanda */}
-      <TouchableOpacity
-        style={styles.headerWrapper}
-        onLongPress={handleResetComanda}
-        activeOpacity={1}
-      >
+      <View style={styles.headerWrapper}>
         <Header
           logoUrl={company?.logo}
           companySlug={companySlug}
@@ -152,7 +128,7 @@ export const MenuScreen: React.FC = () => {
           onCallWaiter={handleCallWaiter}
           primaryColor={primaryColor}
         />
-      </TouchableOpacity>
+      </View>
 
       {/* Separator line between header and menu */}
       <View style={styles.separatorContainer}>
