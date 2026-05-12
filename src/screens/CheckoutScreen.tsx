@@ -281,13 +281,10 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </>
           ) : (
-            <TouchableOpacity
-              style={[styles.requestBillButton, { backgroundColor: primaryColor }]}
-              onPress={handleCallWaiter}
-            >
-              <HandIcon size={20} color={colors.white} />
-              <Text style={styles.requestBillButtonText}>Pedir a conta</Text>
-            </TouchableOpacity>
+            <View style={styles.payAtCounterBanner}>
+              <Ionicons name="information-circle-outline" size={20} color="#92400e" />
+              <Text style={styles.payAtCounterText}>Efetue o pagamento no balcão</Text>
+            </View>
           )}
         </View>
       </View>
@@ -440,18 +437,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.white,
   },
-  requestBillButton: {
+  payAtCounterBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
+    backgroundColor: '#fef3c7',
     gap: spacing.sm,
   },
-  requestBillButtonText: {
+  payAtCounterText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.white,
+    fontWeight: '500',
+    color: '#92400e',
   },
 })
