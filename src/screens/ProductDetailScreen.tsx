@@ -17,6 +17,7 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -60,6 +61,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [observations, setObservations] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Suggestion modal state
@@ -245,7 +247,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       imageUrl: product.imageUrl,
       unitPrice: product.price,
       quantity,
-      observations: "",
+      observations: observations.trim(),
       additionals,
     };
 
@@ -498,6 +500,18 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </View>
 
+            {/* Observations */}
+            <View style={styles.observationsContainer}>
+              <TextInput
+                style={styles.observationsInput}
+                placeholder="Observacoes (ex: sem cebola, ponto da carne...)"
+                placeholderTextColor={colors.textMuted}
+                value={observations}
+                onChangeText={setObservations}
+                maxLength={180}
+              />
+            </View>
+
             {/* Footer */}
             <View style={styles.footer}>
               <View style={styles.footerLeft}>
@@ -671,6 +685,19 @@ const styles = StyleSheet.create({
   noAddonsText: {
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  observationsContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.sm,
+    backgroundColor: "#1F1F1F",
+  },
+  observationsInput: {
+    backgroundColor: "#2A2A2A",
+    color: colors.white,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 14,
   },
   footer: {
     flexDirection: "row",
