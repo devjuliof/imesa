@@ -2,7 +2,7 @@
   "expo": {
     "name": "iMesa",
     "slug": "imesa",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
