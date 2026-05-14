@@ -6,7 +6,7 @@ import { NavigationContainer, useNavigationContainerRef } from '@react-navigatio
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { MenuScreen, SetupScreen, ProductDetailScreen, CurrentOrderScreen, OrderConfirmationScreen, CheckoutScreen, PixPaymentScreen, CardPaymentScreen, WaiterScreen } from './src/screens'
-import { WelcomeScreen } from './src/screens/WelcomeScreen'
+
 import { SessionClosedScreen } from './src/screens/SessionClosedScreen'
 import type { CardPaymentType } from './src/types'
 import { useConfigStore } from './src/stores/configStore'
@@ -26,7 +26,6 @@ const queryClient = new QueryClient({
 // Navigation types
 export type RootStackParamList = {
   Setup: undefined
-  Welcome: undefined
   Menu: undefined
   ProductDetail: { productId: string; editingCartItemKey?: string }
   CurrentOrder: undefined
@@ -53,7 +52,7 @@ function AppContent() {
     if (navigationRef.isReady()) {
       navigationRef.reset({
         index: 0,
-        routes: [{ name: 'Welcome' }],
+        routes: [{ name: 'Menu' }],
       })
     }
   }, [clearSessionClosed, navigationRef])
@@ -87,10 +86,9 @@ function AppContent() {
         screenOptions={{
           headerShown: false,
         }}
-        initialRouteName={isConfigured ? 'Welcome' : 'Setup'}
+        initialRouteName={isConfigured ? 'Menu' : 'Setup'}
       >
         <Stack.Screen name="Setup" component={SetupScreen} />
-        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Menu" component={MenuScreen} />
         <Stack.Screen
           name="ProductDetail"

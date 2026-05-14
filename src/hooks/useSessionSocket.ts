@@ -1,9 +1,10 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { useConfigStore } from '../stores/configStore'
 import { useOrderStore } from '../stores/orderStore'
 import { useCartStore } from '../stores/cartStore'
+import { tableService } from '../services/tableService'
 
 const getSocketUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
@@ -164,6 +165,58 @@ export const useSessionSocket = (): UseSessionSocketReturn => {
       setIsConnected(false)
     }
   }, [isConfigured, tableId, deviceId, handleSessionClosed])
+
+  // ============================================================================
+  // HTTP polling fallback — detects session closure when WebSocket is down
+  // ============================================================================
+
+  const companySlug = useConfigStore((state) => state.companySlug)
+  const hasSentOrders = useOrderStore((state) => state.sentOrders.length > 0)
+
+  useEffect(() => {
+    if (!isConfigured || !tableId || !companySlug || sessionClosed) return
+
+    // Only poll when there are sent orders (= session exists on backend)
+    if (!hasSentOrders) return
+
+    // Only poll when WebSocket is disconnected
+    if (isConnected) return
+
+    const POLL_INTERVAL = 10_000 // 10 seconds
+
+    const checkSession = async () => {
+      try {
+        const active = await tableService.checkSession(companySlug, tableId)
+        if (!active) {
+          if (__DEV__) {
+            console.log('[SessionSocket] Polling detected session closed')
+          }
+          clearAllOrdersRef.current()
+          clearCartRef.current()
+          setSessionClosed(true)
+        }
+      } catch {
+        // Ignore network errors — will retry on next interval
+      }
+    }
+
+    // Check immediately on disconnect
+    void checkSession()
+
+    const intervalId = setInterval(checkSession, POLL_INTERVAL)
+
+    // Also check when app comes back to foreground
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void checkSession()
+      }
+    })
+
+    return () => {
+      clearInterval(intervalId)
+      subscription.remove()
+    }
+  }, [isConfigured, tableId, companySlug, isConnected, sessionClosed, hasSentOrders])
 
   return {
     isConnected,

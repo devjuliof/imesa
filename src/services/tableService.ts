@@ -32,6 +32,18 @@ export const tableService = {
     return response.data.data
   },
 
+  /**
+   * Check if table has an active session
+   * GET /public/tables/:companySlug/:tableId/session/check
+   */
+  checkSession: async (
+    companySlug: string,
+    tableId: string,
+  ): Promise<boolean> => {
+    const response = await api.get(`/public/tables/${companySlug}/${tableId}/session/check`)
+    return response.data.data.active
+  },
+
   registerDevice: async (
     companySlug: string,
     payload: RegisterDevicePayload
