@@ -456,7 +456,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 )}
               </View>
 
-              {/* Right side - Addons */}
+              {/* Right side - Addons + Observations */}
               <View style={styles.rightSide}>
                 {totalSteps > 0 && currentGroup ? (
                   <>
@@ -488,28 +488,45 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                         onSelectItem={handleSelectItem}
                         primaryColor={primaryColor}
                       />
+
+                      {/* Observations - shown on last step */}
+                      {currentStep === totalSteps - 1 && (
+                        <View style={styles.observationsSection}>
+                          <Text style={styles.observationsLabel}>Observações</Text>
+                          <TextInput
+                            style={styles.observationsInput}
+                            placeholder="Ex: sem cebola, ponto da carne..."
+                            placeholderTextColor={colors.textMuted}
+                            value={observations}
+                            onChangeText={setObservations}
+                            maxLength={180}
+                            multiline
+                            numberOfLines={3}
+                            textAlignVertical="top"
+                          />
+                        </View>
+                      )}
                     </ScrollView>
                   </>
                 ) : (
-                  <View style={styles.noAddons}>
-                    <Text style={styles.noAddonsText}>
-                      Este produto não possui opções adicionais.
-                    </Text>
-                  </View>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.observationsSection}>
+                      <Text style={styles.observationsLabel}>Observações</Text>
+                      <TextInput
+                        style={styles.observationsInput}
+                        placeholder="Ex: sem cebola, ponto da carne..."
+                        placeholderTextColor={colors.textMuted}
+                        value={observations}
+                        onChangeText={setObservations}
+                        maxLength={180}
+                        multiline
+                        numberOfLines={3}
+                        textAlignVertical="top"
+                      />
+                    </View>
+                  </ScrollView>
                 )}
               </View>
-            </View>
-
-            {/* Observations */}
-            <View style={styles.observationsContainer}>
-              <TextInput
-                style={styles.observationsInput}
-                placeholder="Observacoes (ex: sem cebola, ponto da carne...)"
-                placeholderTextColor={colors.textMuted}
-                value={observations}
-                onChangeText={setObservations}
-                maxLength={180}
-              />
             </View>
 
             {/* Footer */}
@@ -677,27 +694,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
-  noAddons: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  observationsSection: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  noAddonsText: {
+  observationsLabel: {
     fontSize: 16,
-    color: colors.textSecondary,
-  },
-  observationsContainer: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.sm,
-    backgroundColor: "#1F1F1F",
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   observationsInput: {
-    backgroundColor: "#2A2A2A",
-    color: colors.white,
-    borderRadius: 8,
+    backgroundColor: "#F7F7F8",
+    color: colors.textPrimary,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     fontSize: 14,
+    lineHeight: 20,
+    minHeight: 80,
   },
   footer: {
     flexDirection: "row",
