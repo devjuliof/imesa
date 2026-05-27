@@ -160,7 +160,7 @@ export const CurrentOrderScreen: React.FC<Props> = ({ navigation }) => {
         additionals: item.additionals?.map((add) => ({
           id: add.itemId,
           name: add.name,
-          quantity: add.quantity,
+          quantity: add.quantity * item.quantity,
           priceCents: add.priceCents,
         })),
       }))
