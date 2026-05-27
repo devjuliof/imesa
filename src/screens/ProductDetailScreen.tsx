@@ -269,7 +269,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       addItem(cartItem);
       animateOut(() => navigation.goBack());
     }
-  }, [product, selectedAddons, quantity, addItem, removeItem, editingCartItemKey, animateOut, navigation]);
+  }, [product, selectedAddons, quantity, observations, addItem, removeItem, editingCartItemKey, animateOut, navigation]);
 
   const handleNextStep = useCallback(() => {
     if (!validateCurrentStep()) return;
