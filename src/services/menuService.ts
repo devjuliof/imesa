@@ -7,11 +7,19 @@ import type {
 
 export const menuService = {
   /**
-   * Get the full menu catalog for a company
+   * Get the full menu catalog for a company.
+   *
+   * iMesa runs on the restaurant tables, so it must only show products
+   * available in the dine-in (salão) channel. Passing the channel lets the
+   * backend filter out delivery-only products.
    */
-  getPublicMenu: async (companySlug: string): Promise<CatalogResponse> => {
+  getPublicMenu: async (
+    companySlug: string,
+    channel: 'dine_in' | 'delivery' = 'dine_in'
+  ): Promise<CatalogResponse> => {
     const response = await api.get<ApiResponse<CatalogResponse>>(
-      `/public/menu/${companySlug}`
+      `/public/menu/${companySlug}`,
+      { params: { channel } }
     )
     return response.data.data
   },
