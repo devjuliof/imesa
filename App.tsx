@@ -11,6 +11,7 @@ import { SessionClosedScreen } from './src/screens/SessionClosedScreen'
 import type { CardPaymentType } from './src/types'
 import { useConfigStore } from './src/stores/configStore'
 import { useSessionSocket } from './src/hooks/useSessionSocket'
+import { useAutoUpdate } from './src/hooks/useAutoUpdate'
 import { colors } from './src/theme'
 
 // Create a client
@@ -45,6 +46,8 @@ function AppContent() {
 
   // Connect to WebSocket for session lifecycle events
   const { sessionClosed, clearSessionClosed } = useSessionSocket()
+
+  useAutoUpdate()
 
   const handleSessionClosedDismiss = useCallback(() => {
     clearSessionClosed()
