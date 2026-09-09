@@ -36,22 +36,28 @@ jobs:
           eas build --platform android --profile preview --non-interactive --json > build-result.json
           cat build-result.json
 
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "VERSION_NUM=${VERSION#v}" >> $GITHUB_OUTPUT
+
       - name: Download APK from EAS
         run: |
           APK_URL=$(jq -r '.[0].artifacts.buildUrl' build-result.json)
           echo "Downloading APK from: $APK_URL"
-          curl -L -o imesa.apk "$APK_URL"
-
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          curl -L -o "imesa-${{ steps.version.outputs.VERSION_NUM }}.apk" "$APK_URL"
+          cp "imesa-${{ steps.version.outputs.VERSION_NUM }}.apk" imesa.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: iMesa ${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
-          files: ./imesa.apk
+          files: |
+            ./imesa-${{ steps.version.outputs.VERSION_NUM }}.apk
+            ./imesa.apk
           body: |
             ## iMesa ${{ steps.version.outputs.VERSION }}
 
