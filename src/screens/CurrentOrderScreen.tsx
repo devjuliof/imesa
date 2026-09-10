@@ -157,6 +157,7 @@ export const CurrentOrderScreen: React.FC<Props> = ({ navigation }) => {
         productId: item.productId,
         quantity: item.quantity,
         notes: item.observations || undefined,
+        variationId: item.variationId || undefined,
         additionals: item.additionals?.map((add) => ({
           id: add.itemId,
           name: add.name,
