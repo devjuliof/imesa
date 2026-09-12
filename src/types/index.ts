@@ -79,6 +79,13 @@ export interface PublicProductSuggestion {
   hasRequiredAddons: boolean
 }
 
+export interface PublicProductVariation {
+  id: string
+  name: string
+  priceCents: number
+  sortOrder: number
+}
+
 export interface ProductDetailResponse {
   id: string
   name: string
@@ -88,6 +95,7 @@ export interface ProductDetailResponse {
   categoryName: string
   addonGroups: PublicAddonGroup[]
   suggestions: PublicProductSuggestion[]
+  variations?: PublicProductVariation[]
 }
 
 // ==================== CART ====================
@@ -107,6 +115,7 @@ export interface CartItem {
   quantity: number
   observations: string
   additionals: CartItemAdditional[]
+  variationId?: string
 }
 
 // ==================== ORDER ====================
@@ -126,6 +135,7 @@ export interface CreateOrderItem {
   productId: string
   quantity: number
   notes?: string
+  variationId?: string
   additionals?: OrderItemAdditional[]
 }
 

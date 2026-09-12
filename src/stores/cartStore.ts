@@ -3,20 +3,24 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { CartItem, CartItemAdditional } from '../types'
 
-// Generate a unique key for a cart item based on productId and additionals
+// Generate a unique key for a cart item based on productId, variation and additionals
 const generateCartItemKey = (
   productId: string,
+  variationId?: string,
   additionals?: CartItemAdditional[]
 ): string => {
   const safeAdditionals = additionals || []
+  const variationPart = variationId ? `v:${variationId}` : ''
   if (safeAdditionals.length === 0) {
-    return productId
+    return variationPart ? `${productId}::${variationPart}` : productId
   }
   const additionalsKey = safeAdditionals
     .map((a) => a.itemId)
     .sort()
     .join('|')
-  return `${productId}::${additionalsKey}`
+  return variationPart
+    ? `${productId}::${variationPart}::${additionalsKey}`
+    : `${productId}::${additionalsKey}`
 }
 
 interface CartState {
@@ -65,9 +69,15 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (item: CartItem) => {
         set((state) => {
-          const itemKey = generateCartItemKey(item.productId, item.additionals)
+          const itemKey = generateCartItemKey(
+            item.productId,
+            item.variationId,
+            item.additionals
+          )
           const existingIndex = state.items.findIndex(
-            (i) => generateCartItemKey(i.productId, i.additionals) === itemKey
+            (i) =>
+              generateCartItemKey(i.productId, i.variationId, i.additionals) ===
+              itemKey
           )
 
           if (existingIndex >= 0) {
@@ -95,7 +105,11 @@ export const useCartStore = create<CartStore>()(
 
         set((state) => ({
           items: state.items.map((item) =>
-            generateCartItemKey(item.productId, item.additionals) === itemKey
+            generateCartItemKey(
+              item.productId,
+              item.variationId,
+              item.additionals
+            ) === itemKey
               ? { ...item, quantity }
               : item
           ),
@@ -106,13 +120,17 @@ export const useCartStore = create<CartStore>()(
         set((state) => ({
           items: state.items.filter(
             (item) =>
-              generateCartItemKey(item.productId, item.additionals) !== itemKey
+              generateCartItemKey(
+                item.productId,
+                item.variationId,
+                item.additionals
+              ) !== itemKey
           ),
         }))
       },
 
       getItemKey: (item: CartItem) =>
-        generateCartItemKey(item.productId, item.additionals),
+        generateCartItemKey(item.productId, item.variationId, item.additionals),
 
       clearCart: () => {
         set({ items: [] })

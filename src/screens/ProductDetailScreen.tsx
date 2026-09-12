@@ -33,7 +33,13 @@ import { getImageUrl } from "../services/api";
 import { formatMoney } from "../utils/money.utils";
 import { colors, spacing, borderRadius } from "../theme";
 import type { RootStackParamList } from "../../App";
-import type { PublicAddonItem, CartItemAdditional, CartItem, PublicProductSuggestion } from "../types";
+import type {
+  PublicAddonItem,
+  CartItemAdditional,
+  CartItem,
+  PublicProductSuggestion,
+  PublicProductVariation,
+} from "../types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ProductDetail">;
 
@@ -54,7 +60,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const companySlug = useConfigStore((state) => state.companySlug) || "";
   const company = useCompanyStore((state) => state.company);
-  const { addItem, removeItem, items } = useCartStore();
+  const { addItem, removeItem, items, getItemKey } = useCartStore();
 
   const { product, isLoading } = useProduct(companySlug, productId);
 
@@ -62,6 +68,8 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState("");
+  const [selectedVariation, setSelectedVariation] =
+    useState<PublicProductVariation | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Suggestion modal state
@@ -73,13 +81,20 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   // Load existing item data when editing
   useEffect(() => {
     if (editingCartItemKey && product && !isInitialized) {
-      const existingItem = items.find((item) => {
-        const key = `${item.productId}${item.additionals?.length ? '::' + item.additionals.map(a => a.itemId).sort().join('|') : ''}`;
-        return key === editingCartItemKey;
-      });
+      const existingItem = items.find(
+        (item) => getItemKey(item) === editingCartItemKey,
+      );
 
       if (existingItem) {
         setQuantity(existingItem.quantity);
+
+        // Restore the selected variation
+        if (existingItem.variationId && product.variations) {
+          const variation = product.variations.find(
+            (v) => v.id === existingItem.variationId,
+          );
+          if (variation) setSelectedVariation(variation);
+        }
 
         // Convert cart additionals to selected addons format
         if (existingItem.additionals && existingItem.additionals.length > 0) {
@@ -115,6 +130,9 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const addonGroups = product?.addonGroups || [];
   const totalSteps = addonGroups.length;
   const currentGroup = addonGroups[currentStep];
+
+  const variations = product?.variations || [];
+  const hasVariations = variations.length > 0;
 
   const currentSuggestion = useMemo((): PublicProductSuggestion | null => {
     if (!product?.suggestions || product.suggestions.length === 0) return null;
@@ -234,6 +252,11 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleAddToCart = useCallback(() => {
     if (!product) return;
 
+    if (hasVariations && !selectedVariation) {
+      Alert.alert("Escolha uma opção", "Selecione uma opção para continuar.");
+      return;
+    }
+
     const additionals: CartItemAdditional[] = selectedAddons.map((addon) => ({
       itemId: addon.itemId,
       name: addon.name,
@@ -243,12 +266,13 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
     const cartItem: CartItem = {
       productId: product.id,
-      productName: product.name,
+      productName: selectedVariation ? selectedVariation.name : product.name,
       imageUrl: product.imageUrl,
-      unitPrice: product.price,
+      unitPrice: selectedVariation ? selectedVariation.priceCents : product.price,
       quantity,
       observations: observations.trim(),
       additionals,
+      variationId: selectedVariation ? selectedVariation.id : undefined,
     };
 
     // Check if product has suggestions
@@ -269,9 +293,13 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       addItem(cartItem);
       animateOut(() => navigation.goBack());
     }
-  }, [product, selectedAddons, quantity, observations, addItem, removeItem, editingCartItemKey, animateOut, navigation]);
+  }, [product, selectedAddons, selectedVariation, hasVariations, quantity, observations, addItem, removeItem, editingCartItemKey, animateOut, navigation]);
 
   const handleNextStep = useCallback(() => {
+    if (hasVariations && !selectedVariation) {
+      Alert.alert("Escolha uma opção", "Selecione uma opção para continuar.");
+      return;
+    }
     if (!validateCurrentStep()) return;
 
     if (currentStep < totalSteps - 1) {
@@ -279,7 +307,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     } else {
       handleAddToCart();
     }
-  }, [currentStep, totalSteps, validateCurrentStep, handleAddToCart]);
+  }, [currentStep, totalSteps, hasVariations, selectedVariation, validateCurrentStep, handleAddToCart]);
 
   const handlePreviousStep = useCallback(() => {
     if (currentStep > 0) {
@@ -353,13 +381,15 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const subtotal = useMemo(() => {
     if (!product) return 0;
-    const productTotal = product.price * quantity;
+    const productTotal =
+      (selectedVariation ? selectedVariation.priceCents : product.price) *
+      quantity;
     const addonsTotal = selectedAddons.reduce(
       (sum, addon) => sum + addon.priceCents * addon.quantity,
       0,
     );
     return productTotal + addonsTotal;
-  }, [product, quantity, selectedAddons]);
+  }, [product, quantity, selectedVariation, selectedAddons]);
 
   const selectedItemsForCurrentGroup = useMemo(() => {
     if (!currentGroup) return [];
@@ -453,6 +483,47 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                   <Text style={styles.productDescription}>
                     {product.description}
                   </Text>
+                )}
+
+                {hasVariations && (
+                  <View style={styles.variationSection}>
+                    <Text style={styles.variationLabel}>Escolha uma opção</Text>
+                    {variations.map((variation) => {
+                      const isSelected = selectedVariation?.id === variation.id;
+                      return (
+                        <TouchableOpacity
+                          key={variation.id}
+                          style={[
+                            styles.variationItem,
+                            isSelected && { borderColor: primaryColor },
+                          ]}
+                          onPress={() => setSelectedVariation(variation)}
+                        >
+                          <View
+                            style={[
+                              styles.variationRadio,
+                              isSelected && { borderColor: primaryColor },
+                            ]}
+                          >
+                            {isSelected && (
+                              <View
+                                style={[
+                                  styles.variationRadioDot,
+                                  { backgroundColor: primaryColor },
+                                ]}
+                              />
+                            )}
+                          </View>
+                          <Text style={styles.variationName}>
+                            {variation.name}
+                          </Text>
+                          <Text style={styles.variationPrice}>
+                            {formatMoney(variation.priceCents)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 )}
               </View>
 
@@ -761,5 +832,53 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  variationSection: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.sm,
+  },
+  variationLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  variationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  variationRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  variationRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  variationName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    color: colors.textPrimary,
+  },
+  variationPrice: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textSecondary,
   },
 });
