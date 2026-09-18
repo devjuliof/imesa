@@ -409,6 +409,45 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     return actionText;
   }, [currentStep, totalSteps, editingCartItemKey]);
 
+  const variationPicker = hasVariations ? (
+    <View style={styles.variationSection}>
+      <Text style={styles.variationLabel}>Escolha uma opção</Text>
+      {variations.map((variation) => {
+        const isSelected = selectedVariation?.id === variation.id;
+        return (
+          <TouchableOpacity
+            key={variation.id}
+            style={[
+              styles.variationItem,
+              isSelected && { borderColor: primaryColor },
+            ]}
+            onPress={() => setSelectedVariation(variation)}
+          >
+            <View
+              style={[
+                styles.variationRadio,
+                isSelected && { borderColor: primaryColor },
+              ]}
+            >
+              {isSelected && (
+                <View
+                  style={[
+                    styles.variationRadioDot,
+                    { backgroundColor: primaryColor },
+                  ]}
+                />
+              )}
+            </View>
+            <Text style={styles.variationName}>{variation.name}</Text>
+            <Text style={styles.variationPrice}>
+              {formatMoney(variation.priceCents)}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  ) : null;
+
   return (
     <View style={styles.container}>
       {/* Dark overlay background */}
@@ -484,47 +523,6 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                     {product.description}
                   </Text>
                 )}
-
-                {hasVariations && (
-                  <View style={styles.variationSection}>
-                    <Text style={styles.variationLabel}>Escolha uma opção</Text>
-                    {variations.map((variation) => {
-                      const isSelected = selectedVariation?.id === variation.id;
-                      return (
-                        <TouchableOpacity
-                          key={variation.id}
-                          style={[
-                            styles.variationItem,
-                            isSelected && { borderColor: primaryColor },
-                          ]}
-                          onPress={() => setSelectedVariation(variation)}
-                        >
-                          <View
-                            style={[
-                              styles.variationRadio,
-                              isSelected && { borderColor: primaryColor },
-                            ]}
-                          >
-                            {isSelected && (
-                              <View
-                                style={[
-                                  styles.variationRadioDot,
-                                  { backgroundColor: primaryColor },
-                                ]}
-                              />
-                            )}
-                          </View>
-                          <Text style={styles.variationName}>
-                            {variation.name}
-                          </Text>
-                          <Text style={styles.variationPrice}>
-                            {formatMoney(variation.priceCents)}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
               </View>
 
               {/* Right side - Addons + Observations */}
@@ -553,6 +551,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                     </View>
 
                     <ScrollView showsVerticalScrollIndicator={false}>
+                      {currentStep === 0 && variationPicker}
                       <AddonGroup
                         group={currentGroup}
                         selectedItems={selectedItemsForCurrentGroup}
@@ -581,6 +580,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                   </>
                 ) : (
                   <ScrollView showsVerticalScrollIndicator={false}>
+                    {variationPicker}
                     <View style={styles.observationsSection}>
                       <Text style={styles.observationsLabel}>Observações</Text>
                       <TextInput
