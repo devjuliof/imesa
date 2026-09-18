@@ -28,6 +28,18 @@
         "EXPO_PUBLIC_COMPANY_SLUG": "forja-bbq",
         "EXPO_PUBLIC_DEBUG_TOOLS": "false"
       }
+    },
+    "tablet": {
+      "distribution": "internal",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.itotembr.com",
+        "EXPO_PUBLIC_COMPANY_SLUG": "forja-bbq",
+        "EXPO_PUBLIC_DEBUG_TOOLS": "false"
+      }
     }
   },
   "submit": {
