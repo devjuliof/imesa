@@ -2,7 +2,7 @@
   "expo": {
     "name": "iMesa",
     "slug": "imesa",
-    "version": "1.7.3",
+    "version": "1.7.4",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
       "package": "com.itotem.imesa",
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "favicon": "./assets/favicon.png"
