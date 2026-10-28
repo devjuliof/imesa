@@ -7,20 +7,25 @@ import type { CartItem, CartItemAdditional } from '../types'
 const generateCartItemKey = (
   productId: string,
   variationId?: string,
-  additionals?: CartItemAdditional[]
+  additionals?: CartItemAdditional[],
+  observations?: string
 ): string => {
   const safeAdditionals = additionals || []
   const variationPart = variationId ? `v:${variationId}` : ''
+  const observationsPart = (observations || '').trim()
+  const obsSuffix = observationsPart ? `::o:${observationsPart}` : ''
   if (safeAdditionals.length === 0) {
-    return variationPart ? `${productId}::${variationPart}` : productId
+    const base = variationPart ? `${productId}::${variationPart}` : productId
+    return `${base}${obsSuffix}`
   }
   const additionalsKey = safeAdditionals
     .map((a) => a.itemId)
     .sort()
     .join('|')
-  return variationPart
+  const base = variationPart
     ? `${productId}::${variationPart}::${additionalsKey}`
     : `${productId}::${additionalsKey}`
+  return `${base}${obsSuffix}`
 }
 
 interface CartState {
@@ -70,13 +75,11 @@ export const useCartStore = create<CartStore>()(
       addItem: (item: CartItem) => {
         set((state) => {
           const itemKey = generateCartItemKey(
-            item.productId,
-            item.variationId,
-            item.additionals
+            item.productId, item.variationId, item.additionals, item.observations
           )
           const existingIndex = state.items.findIndex(
             (i) =>
-              generateCartItemKey(i.productId, i.variationId, i.additionals) ===
+              generateCartItemKey(i.productId, i.variationId, i.additionals, i.observations) ===
               itemKey
           )
 
@@ -106,9 +109,7 @@ export const useCartStore = create<CartStore>()(
         set((state) => ({
           items: state.items.map((item) =>
             generateCartItemKey(
-              item.productId,
-              item.variationId,
-              item.additionals
+              item.productId, item.variationId, item.additionals, item.observations
             ) === itemKey
               ? { ...item, quantity }
               : item
@@ -121,16 +122,14 @@ export const useCartStore = create<CartStore>()(
           items: state.items.filter(
             (item) =>
               generateCartItemKey(
-                item.productId,
-                item.variationId,
-                item.additionals
+                item.productId, item.variationId, item.additionals, item.observations
               ) !== itemKey
           ),
         }))
       },
 
       getItemKey: (item: CartItem) =>
-        generateCartItemKey(item.productId, item.variationId, item.additionals),
+        generateCartItemKey(item.productId, item.variationId, item.additionals, item.observations),
 
       clearCart: () => {
         set({ items: [] })

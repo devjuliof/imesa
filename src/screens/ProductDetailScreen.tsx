@@ -87,6 +87,7 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
       if (existingItem) {
         setQuantity(existingItem.quantity);
+        setObservations(existingItem.observations || "");
 
         // Restore the selected variation
         if (existingItem.variationId && product.variations) {
