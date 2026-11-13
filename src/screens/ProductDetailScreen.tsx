@@ -31,6 +31,11 @@ import { AddonGroup, StepIndicator, SuggestionOverlay } from "../components/prod
 import { HandIcon } from "../components/icons";
 import { getImageUrl } from "../services/api";
 import { formatMoney } from "../utils/money.utils";
+import {
+  getTotalSteps,
+  isObservationsStep,
+  getStepButtonText,
+} from "../utils/productSteps";
 import { colors, spacing, borderRadius } from "../theme";
 import type { RootStackParamList } from "../../App";
 import type {
@@ -129,8 +134,12 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const imageUrl = getImageUrl(product?.imageUrl);
 
   const addonGroups = product?.addonGroups || [];
-  const totalSteps = addonGroups.length;
+  const totalSteps = getTotalSteps(addonGroups.length);
   const currentGroup = addonGroups[currentStep];
+  const showObservationsStep = isObservationsStep(
+    currentStep,
+    addonGroups.length,
+  );
 
   const variations = product?.variations || [];
   const hasVariations = variations.length > 0;
@@ -399,16 +408,11 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       .map((s) => ({ itemId: s.itemId, quantity: s.quantity }));
   }, [currentGroup, selectedAddons]);
 
-  const buttonText = useMemo(() => {
-    const actionText = editingCartItemKey ? "Atualizar pedido" : "Adicionar ao pedido";
-    if (totalSteps === 0) {
-      return actionText;
-    }
-    if (currentStep < totalSteps - 1) {
-      return "Próximo passo";
-    }
-    return actionText;
-  }, [currentStep, totalSteps, editingCartItemKey]);
+  const buttonText = useMemo(
+    () =>
+      getStepButtonText(currentStep, addonGroups.length, !!editingCartItemKey),
+    [currentStep, addonGroups.length, editingCartItemKey],
+  );
 
   const variationPicker = hasVariations ? (
     <View style={styles.variationSection}>
@@ -528,7 +532,36 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
               {/* Right side - Addons + Observations */}
               <View style={styles.rightSide}>
-                {totalSteps > 0 && currentGroup ? (
+                {showObservationsStep ? (
+                  <>
+                    <View style={styles.stepHeader}>
+                      <View>
+                        <Text style={styles.stepTitle}>Observações</Text>
+                        <Text style={styles.stepSubtitle}>
+                          Alguma observação para a cozinha? (opcional)
+                        </Text>
+                      </View>
+                      <StepIndicator
+                        currentStep={currentStep + 1}
+                        totalSteps={totalSteps}
+                      />
+                    </View>
+
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                      <TextInput
+                        style={styles.observationsInput}
+                        placeholder="Ex: sem cebola, ponto da carne..."
+                        placeholderTextColor={colors.textMuted}
+                        value={observations}
+                        onChangeText={setObservations}
+                        maxLength={180}
+                        multiline
+                        numberOfLines={3}
+                        textAlignVertical="top"
+                      />
+                    </ScrollView>
+                  </>
+                ) : totalSteps > 0 && currentGroup ? (
                   <>
                     <View style={styles.stepHeader}>
                       <View>
@@ -559,24 +592,6 @@ export const ProductDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                         onSelectItem={handleSelectItem}
                         primaryColor={primaryColor}
                       />
-
-                      {/* Observations - shown on last step */}
-                      {currentStep === totalSteps - 1 && (
-                        <View style={styles.observationsSection}>
-                          <Text style={styles.observationsLabel}>Observações</Text>
-                          <TextInput
-                            style={styles.observationsInput}
-                            placeholder="Ex: sem cebola, ponto da carne..."
-                            placeholderTextColor={colors.textMuted}
-                            value={observations}
-                            onChangeText={setObservations}
-                            maxLength={180}
-                            multiline
-                            numberOfLines={3}
-                            textAlignVertical="top"
-                          />
-                        </View>
-                      )}
                     </ScrollView>
                   </>
                 ) : (
